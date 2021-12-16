@@ -3,6 +3,10 @@ package study.args;
 import java.text.ParseException;
 import java.util.*;
 
+/**
+ * BEFORE REFACTOR
+ */
+
 public class Args {
 
     private String schema;
