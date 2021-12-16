@@ -13,9 +13,9 @@ public class Args {
     private String[] args;
     private boolean valid = true;
     private Set<Character> unexpectedArguments = new TreeSet<>();
-    private Map<Character, Boolean> booleanArgs = new HashMap<>();
-    private Map<Character, String> stringArgs = new HashMap<>();
-    private Map<Character, Integer> intArgs = new HashMap<>();
+    private Map<Character, ArgumentMarshaller> booleanArgs = new HashMap<>();
+    private Map<Character, ArgumentMarshaller> stringArgs = new HashMap<>();
+    private Map<Character, ArgumentMarshaller> intArgs = new HashMap<>();
     private Set<Character> argsFound = new HashSet<>();
     private int currentArgument;
     private char errorArgumentId = '\0';
@@ -80,15 +80,15 @@ public class Args {
     }
 
     private void parseBooleanSchemaElement(char elementId) {
-        booleanArgs.put(elementId, false);
+        booleanArgs.put(elementId, new BooleanArgumentMarshaller());
     }
 
     private void parseIntegerSchemaElement(char elementId) {
-        intArgs.put(elementId, 0);
+        intArgs.put(elementId, new IntegerArgumentMarshaller());
     }
 
     private void parseStringSchemaElement(char elementId) {
-        stringArgs.put(elementId, "");
+        stringArgs.put(elementId, new StringArgumentMarshaller());
     }
 
     private boolean isBooleanSchemaElement(String elementTail) {
@@ -154,7 +154,7 @@ public class Args {
         String parameter = null;
         try {
             parameter = args[currentArgument];
-            intArgs.put(argChar, Integer.valueOf(parameter));
+            intArgs.get(argChar).set(Integer.valueOf(parameter));
         } catch (ArrayIndexOutOfBoundsException e) {
             valid = false;
             errorArgumentId = argChar;
@@ -175,7 +175,7 @@ public class Args {
     private void setStringArg(char argChar) throws ArgsException {
         currentArgument++;
         try {
-            stringArgs.put(argChar, args[currentArgument]);
+            stringArgs.get(argChar).set(args[currentArgument]);
         } catch (ArrayIndexOutOfBoundsException e) {
             valid = false;
             errorArgumentId = argChar;
@@ -189,7 +189,7 @@ public class Args {
     }
 
     private void setBooleanArg(char argChar, boolean value) {
-        booleanArgs.put(argChar, value);
+        booleanArgs.get(argChar).set(value);
     }
 
     public int cardinality() {
@@ -230,28 +230,19 @@ public class Args {
         return message.toString();
     }
 
-    private boolean falseIfNull(Boolean b) {
-        return b != null && b;
-    }
-
-    private int zeroIfNull(Integer i) {
-        return i == null ? 0 : i;
-    }
-
-    private String blankIfNull(String s) {
-        return s == null ? "" : s;
-    }
-
     public String getString(char arg) {
-        return blankIfNull(stringArgs.get(arg));
+        StringArgumentMarshaller am = (StringArgumentMarshaller) this.stringArgs.get(arg);
+        return am == null ? "" : am.get();
     }
 
     public int getInt(char arg) {
-        return zeroIfNull(intArgs.get(arg));
+        IntegerArgumentMarshaller am = (IntegerArgumentMarshaller) intArgs.get(arg);
+        return am == null ? 0 : am.get();
     }
 
     public boolean getBoolean(char arg) {
-        return falseIfNull(booleanArgs.get(arg));
+        BooleanArgumentMarshaller am = (BooleanArgumentMarshaller) booleanArgs.get(arg);
+        return am != null && am.get();
     }
 
     public boolean has(char arg) {
@@ -265,5 +256,54 @@ public class Args {
     private class ArgsException extends Exception {
 
     }
+
+    private interface ArgumentMarshaller<T> {
+        T get();
+
+        void set(T value);
+
+    }
+
+    private class BooleanArgumentMarshaller implements ArgumentMarshaller<Boolean> {
+        private boolean booleanValue = false;
+        @Override
+        public Boolean get() {
+            return booleanValue;
+        }
+
+        @Override
+        public void set(Boolean value) {
+            booleanValue = value;
+        }
+    }
+
+    private class StringArgumentMarshaller implements ArgumentMarshaller<String> {
+        private String stringValue = "";
+
+        @Override
+        public String get() {
+            return stringValue;
+        }
+
+        @Override
+        public void set(String value) {
+            this.stringValue = value;
+        }
+    }
+
+    private class IntegerArgumentMarshaller implements ArgumentMarshaller<Integer> {
+        private Integer intValue = 0;
+
+        @Override
+        public Integer get() {
+            return intValue;
+        }
+
+        @Override
+        public void set(Integer value) {
+            this.intValue = value;
+        }
+    }
+
 
 }

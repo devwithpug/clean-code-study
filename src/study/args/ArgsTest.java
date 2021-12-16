@@ -32,6 +32,27 @@ class ArgsTest {
     }
 
     @Test
+    void testWithNoSchemaButGetBooleanValue() throws Exception {
+        Args args = new Args("", new String[]{});
+
+        assertThat(args.getBoolean('b')).isFalse();
+    }
+
+    @Test
+    void testWithNoSchemaButGetStringValue() throws Exception {
+        Args args = new Args("", new String[]{});
+
+        assertThat(args.getString('s')).isEqualTo("");
+    }
+
+    @Test
+    void testWithSchemaButGetIntegerValue() throws Exception {
+        Args args = new Args("", new String[]{});
+
+        assertThat(args.getInt('i')).isEqualTo(0);
+    }
+
+    @Test
     void testNonLetterSchema() throws Exception {
         assertThatThrownBy(() -> new Args("*", new String[]{}))
                 .isInstanceOf(ParseException.class);
