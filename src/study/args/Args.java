@@ -118,6 +118,7 @@ public class Args {
     private void parseElements(String arg) throws ArgsException {
         for (int i = 1; i < arg.length(); i++) {
             parseElement(arg.charAt(i));
+            currentArgument++;
         }
     }
 
