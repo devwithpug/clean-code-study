@@ -1,7 +1,9 @@
-package study.args;
+package study.args.test;
 
 
 import org.junit.jupiter.api.Test;
+import study.args.Args;
+import study.args.exception.ArgsException;
 
 import static org.assertj.core.api.Assertions.*;
 

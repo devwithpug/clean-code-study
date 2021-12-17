@@ -1,6 +1,6 @@
 package study.args;
 
-import java.text.ParseException;
+import study.args.exception.ArgsException;
 
 public class Main {
 

@@ -1,4 +1,4 @@
-package study.args;
+package study.args.exception;
 
 public class ArgsException extends Exception {
 
