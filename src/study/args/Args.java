@@ -4,40 +4,26 @@ import study.args.ArgsException.ErrorCode;
 import java.util.*;
 
 /**
- * 14-13
+ * 리팩터링 후
  */
 
 public class Args {
 
     private String schema;
-    private boolean valid = true;
-    private Set<Character> unexpectedArguments = new TreeSet<>();
     private Map<Character, ArgumentMarshaller> marshaller = new HashMap<>();
     private Set<Character> argsFound = new HashSet<>();
     private Iterator<String> currentArgument;
-    private char errorArgumentId = '\0';
-    private String errorParameter = "TILT";
-    private ErrorCode errorCode = ErrorCode.OK;
     private List<String> argsList;
 
     public Args(String schema, String[] args) throws ArgsException {
         this.schema = schema;
         argsList = Arrays.asList(args);
-        valid = parse();
+        parse();
     }
 
-    private boolean parse() throws ArgsException {
-
-        if (schema.length() == 0 && argsList.size() == 0) {
-            return true;
-        }
-
+    private void parse() throws ArgsException {
         parseSchema();
-        try {
-            parseArguments();
-        } catch (ArgsException e) {
-        }
-        return valid;
+        parseArguments();
     }
 
     private boolean parseSchema() throws ArgsException {
@@ -63,7 +49,7 @@ public class Args {
         } else if (isDoubleSchemaElement(elementTail)) {
             marshaller.put(elementId, new DoubleArgumentMarshaller());
         } else {
-            throw new ArgsException(String.format("Argument: %c has invalid format: %s.", elementId, elementTail));
+            throw new ArgsException(ErrorCode.INVALID_FORMAT, elementId, elementTail);
         }
     }
 
@@ -71,7 +57,7 @@ public class Args {
 
     private void validateSchemaElementId(char elementId) throws ArgsException {
         if (!Character.isLetter(elementId)) {
-            throw new ArgsException("Bad character:" + elementId + "in Args format: " + schema);
+            throw new ArgsException(ErrorCode.INVALID_ARGUMENT_NAME, elementId, null);
         }
     }
 
@@ -112,9 +98,7 @@ public class Args {
         if (setArgument(argChar)) {
             argsFound.add(argChar);
         } else {
-            unexpectedArguments.add(argChar);
-            errorCode = ErrorCode.UNEXPECTED_ARGUMENT;
-            valid = false;
+            throw new ArgsException(ErrorCode.UNEXPECTED_ARGUMENT, argChar, null);
         }
     }
 
@@ -127,8 +111,7 @@ public class Args {
             m.set(currentArgument);
             return true;
         } catch (ArgsException e) {
-            valid = false;
-            errorArgumentId = argChar;
+            e.setErrorArgumentId(argChar);
             throw e;
         }
     }
@@ -143,36 +126,6 @@ public class Args {
         } else {
             return "";
         }
-    }
-
-    public String errorMessage() throws Exception {
-        switch (errorCode) {
-            case OK:
-                throw new Exception("TILT: Should not get here.");
-            case UNEXPECTED_ARGUMENT:
-                return unexpectedArgumentsMessage();
-            case MISSING_STRING:
-                return String.format("Could not find string parameter for -%c.", errorArgumentId);
-            case INVALID_INTEGER:
-                return String.format("Argument -%c expects an integer but was '%s'.", errorArgumentId, errorParameter);
-            case MISSING_INTEGER:
-                return String.format("Could not find integer parameter for -%c.", errorArgumentId);
-            case INVALID_DOUBLE:
-                return String.format("Argument -%c expects an double but was '%s'.", errorArgumentId, errorParameter);
-            case MISSING_DOUBLE:
-                return String.format("Could not find double parameter for -%c.", errorArgumentId);
-        }
-        return "";
-    }
-
-    private String unexpectedArgumentsMessage() {
-        StringBuffer message = new StringBuffer("Argument(s) -");
-        for (Character c : unexpectedArguments) {
-            message.append(c);
-        }
-        message.append(" unexpected.");
-
-        return message.toString();
     }
 
     public String getString(char arg) {
@@ -197,10 +150,6 @@ public class Args {
 
     public boolean has(char arg) {
         return argsFound.contains(arg);
-    }
-
-    public boolean isValid() {
-        return valid;
     }
 
     private interface ArgumentMarshaller<T> {
@@ -236,8 +185,7 @@ public class Args {
             try {
                 this.stringValue = currentArgument.next();
             } catch (NoSuchElementException e) {
-                errorCode = ErrorCode.MISSING_STRING;
-                throw new ArgsException();
+                throw new ArgsException(ErrorCode.MISSING_STRING);
             }
         }
     }
@@ -257,12 +205,9 @@ public class Args {
                 parameter = currentArgument.next();
                 this.intValue = Integer.parseInt(parameter);
             } catch (NoSuchElementException e) {
-                errorCode = ErrorCode.MISSING_INTEGER;
-                throw new ArgsException();
+                throw new ArgsException(ErrorCode.MISSING_INTEGER);
             } catch (NumberFormatException e) {
-                errorParameter = parameter;
-                errorCode = ErrorCode.INVALID_INTEGER;
-                throw new ArgsException();
+                throw new ArgsException(ErrorCode.INVALID_INTEGER, parameter);
             }
         }
     }
@@ -281,12 +226,9 @@ public class Args {
                 parameter = currentArgument.next();
                 this.doubleValue = Double.parseDouble(parameter);
             } catch (NoSuchElementException e) {
-                errorCode = ErrorCode.MISSING_DOUBLE;
-                throw new ArgsException();
+                throw new ArgsException(ErrorCode.MISSING_DOUBLE);
             } catch (NumberFormatException e) {
-                errorParameter = parameter;
-                errorCode = ErrorCode.INVALID_DOUBLE;
-                throw new ArgsException();
+                throw new ArgsException(ErrorCode.INVALID_DOUBLE, parameter);
             }
         }
     }
