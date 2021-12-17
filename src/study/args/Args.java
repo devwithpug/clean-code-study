@@ -4,21 +4,21 @@ import java.text.ParseException;
 import java.util.*;
 
 /**
- * BEFORE REFACTOR
+ * 14-12
  */
 
 public class Args {
 
     private String schema;
-    private String[] args;
     private boolean valid = true;
     private Set<Character> unexpectedArguments = new TreeSet<>();
     private Map<Character, ArgumentMarshaller> marshaller = new HashMap<>();
     private Set<Character> argsFound = new HashSet<>();
-    private int currentArgument;
+    private Iterator<String> currentArgument;
     private char errorArgumentId = '\0';
     private String errorParameter = "TILT";
     private ErrorCode errorCode = ErrorCode.OK;
+    private List<String> argsList;
 
     private enum ErrorCode {
         OK, MISSING_STRING, MISSING_INTEGER, INVALID_INTEGER, UNEXPECTED_ARGUMENT
@@ -26,13 +26,13 @@ public class Args {
 
     public Args(String schema, String[] args) throws ParseException {
         this.schema = schema;
-        this.args = args;
+        argsList = Arrays.asList(args);
         valid = parse();
     }
 
     private boolean parse() throws ParseException {
 
-        if (schema.length() == 0 && args.length == 0) {
+        if (schema.length() == 0 && argsList.size() == 0) {
             return true;
         }
 
@@ -88,14 +88,14 @@ public class Args {
     }
 
     private boolean parseArguments() throws ArgsException {
-        for (int currentArgument = 0; currentArgument < args.length; currentArgument++) {
-            String arg = args[currentArgument];
-            parseArguments(arg);
+        for (currentArgument = argsList.iterator(); currentArgument.hasNext();) {
+            String arg = currentArgument.next();
+            parseArgument(arg);
         }
         return true;
     }
 
-    private void parseArguments(String arg) throws ArgsException {
+    private void parseArgument(String arg) throws ArgsException {
         if (arg.startsWith("-")) {
             parseElements(arg);
         }
@@ -104,7 +104,6 @@ public class Args {
     private void parseElements(String arg) throws ArgsException {
         for (int i = 1; i < arg.length(); i++) {
             parseElement(arg.charAt(i));
-            currentArgument++;
         }
     }
 
@@ -120,51 +119,17 @@ public class Args {
 
     private boolean setArgument(char argChar) throws ArgsException {
         ArgumentMarshaller m = marshaller.get(argChar);
+        if (m == null) {
+            return false;
+        }
         try {
-            if (m instanceof BooleanArgumentMarshaller) {
-                setBooleanArg(m);
-            } else if (m instanceof StringArgumentMarshaller) {
-                setStringArg(m);
-            } else if (m instanceof IntegerArgumentMarshaller) {
-                setIntArg(m);
-            } else {
-                return false;
-            }
+            m.set(currentArgument);
+            return true;
         } catch (ArgsException e) {
             valid = false;
             errorArgumentId = argChar;
             throw e;
         }
-        return true;
-    }
-
-    private void setIntArg(ArgumentMarshaller<Integer> m) throws ArgsException {
-        currentArgument++;
-        String parameter = null;
-        try {
-            parameter = args[currentArgument];
-            m.set(Integer.valueOf(parameter));
-        } catch (ArrayIndexOutOfBoundsException e) {
-            errorCode = ErrorCode.MISSING_INTEGER;
-            throw new ArgsException();
-        } catch (NumberFormatException e) {
-            errorCode = ErrorCode.INVALID_INTEGER;
-            throw new ArgsException();
-        }
-    }
-
-    private void setStringArg(ArgumentMarshaller<String> m) throws ArgsException {
-        currentArgument++;
-        try {
-            m.set(args[currentArgument]);
-        } catch (ArrayIndexOutOfBoundsException e) {
-            errorCode = ErrorCode.MISSING_STRING;
-            throw new ArgsException();
-        }
-    }
-
-    private void setBooleanArg(ArgumentMarshaller<Boolean> m) {
-        m.set(true);
     }
 
     public int cardinality() {
@@ -235,7 +200,7 @@ public class Args {
     private interface ArgumentMarshaller<T> {
         T get();
 
-        void set(T value);
+        void set(Iterator<String> currentArgument) throws ArgsException;
 
     }
 
@@ -247,8 +212,8 @@ public class Args {
         }
 
         @Override
-        public void set(Boolean value) {
-            booleanValue = value;
+        public void set(Iterator<String> currentArgument) throws ArgsException {
+            booleanValue = true;
         }
     }
 
@@ -261,8 +226,13 @@ public class Args {
         }
 
         @Override
-        public void set(String value) {
-            this.stringValue = value;
+        public void set(Iterator<String> currentArgument) throws ArgsException {
+            try {
+                this.stringValue = currentArgument.next();
+            } catch (NoSuchElementException e) {
+                errorCode = ErrorCode.MISSING_STRING;
+                throw new ArgsException();
+            }
         }
     }
 
@@ -275,8 +245,18 @@ public class Args {
         }
 
         @Override
-        public void set(Integer value) {
-            this.intValue = value;
+        public void set(Iterator<String> currentArgument) throws ArgsException {
+            String parameter = null;
+            try {
+                parameter = currentArgument.next();
+                this.intValue = Integer.parseInt(parameter);
+            } catch (NoSuchElementException e) {
+                errorCode = ErrorCode.MISSING_INTEGER;
+                throw new ArgsException();
+            } catch (NumberFormatException e) {
+                errorCode = ErrorCode.INVALID_INTEGER;
+                throw new ArgsException();
+            }
         }
     }
 
