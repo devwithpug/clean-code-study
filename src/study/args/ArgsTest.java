@@ -115,17 +115,24 @@ class ArgsTest {
 
     @Test
     void testSimpleDoublePresent() throws Exception {
-        // TODO - Double values
+        Args args = new Args("x##", new String[]{"-x", "53.4"});
+
+        assertThat(args.isValid()).isTrue();
+        assertThat(args.getDouble('x')).isEqualTo(53.4);
     }
 
     @Test
     void testInvalidDouble() throws Exception {
-        // TODO - Double values
+        Args args = new Args("x##", new String[]{"-x", "53,4"});
+
+        fail(args);
     }
 
     @Test
     void testMissingDouble() throws Exception {
-        // TODO - Double values
+        Args args = new Args("x##", new String[]{"-x"});
+
+        fail(args);
     }
 
     @Test

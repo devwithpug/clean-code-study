@@ -21,7 +21,7 @@ public class Args {
     private List<String> argsList;
 
     private enum ErrorCode {
-        OK, MISSING_STRING, MISSING_INTEGER, INVALID_INTEGER, UNEXPECTED_ARGUMENT
+        OK, MISSING_STRING, MISSING_INTEGER, MISSING_DOUBLE, INVALID_INTEGER, INVALID_DOUBLE, UNEXPECTED_ARGUMENT
     }
 
     public Args(String schema, String[] args) throws ParseException {
@@ -64,6 +64,8 @@ public class Args {
             marshaller.put(elementId, new StringArgumentMarshaller());
         } else if (isIntegerSchemaElement(elementTail)) {
             marshaller.put(elementId, new IntegerArgumentMarshaller());
+        } else if (isDoubleSchemaElement(elementTail)) {
+            marshaller.put(elementId, new DoubleArgumentMarshaller());
         } else {
             throw new ParseException(String.format("Argument: %c has invalid format: %s.", elementId, elementTail), 0);
         }
@@ -85,6 +87,9 @@ public class Args {
     }
     private boolean isStringSchemaElement(String elementTail) {
         return elementTail.equals("*");
+    }
+    private boolean isDoubleSchemaElement(String elementTail) {
+        return elementTail.equals("##");
     }
 
     private boolean parseArguments() throws ArgsException {
@@ -185,6 +190,11 @@ public class Args {
         return am != null && am.get();
     }
 
+    public double getDouble(char arg) {
+        ArgumentMarshaller<Double> am = marshaller.get(arg);
+        return am == null ? 0.0 : am.get();
+    }
+
     public boolean has(char arg) {
         return argsFound.contains(arg);
     }
@@ -259,6 +269,30 @@ public class Args {
             }
         }
     }
+
+    private class DoubleArgumentMarshaller implements ArgumentMarshaller<Double> {
+        private double doubleValue = 0;
+        @Override
+        public Double get() {
+            return doubleValue;
+        }
+
+        @Override
+        public void set(Iterator<String> currentArgument) throws ArgsException {
+            String parameter = null;
+            try {
+                parameter = currentArgument.next();
+                this.doubleValue = Double.parseDouble(parameter);
+            } catch (NoSuchElementException e) {
+                errorCode = ErrorCode.MISSING_DOUBLE;
+                throw new ArgsException();
+            } catch (NumberFormatException e) {
+                errorCode = ErrorCode.INVALID_DOUBLE;
+                throw new ArgsException();
+            }
+        }
+    }
+
 
 
 }
