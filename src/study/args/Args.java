@@ -4,7 +4,7 @@ import study.args.ArgsException.ErrorCode;
 import java.util.*;
 
 /**
- * 14-12
+ * 14-13
  */
 
 public class Args {
@@ -157,6 +157,10 @@ public class Args {
                 return String.format("Argument -%c expects an integer but was '%s'.", errorArgumentId, errorParameter);
             case MISSING_INTEGER:
                 return String.format("Could not find integer parameter for -%c.", errorArgumentId);
+            case INVALID_DOUBLE:
+                return String.format("Argument -%c expects an double but was '%s'.", errorArgumentId, errorParameter);
+            case MISSING_DOUBLE:
+                return String.format("Could not find double parameter for -%c.", errorArgumentId);
         }
         return "";
     }
@@ -256,6 +260,7 @@ public class Args {
                 errorCode = ErrorCode.MISSING_INTEGER;
                 throw new ArgsException();
             } catch (NumberFormatException e) {
+                errorParameter = parameter;
                 errorCode = ErrorCode.INVALID_INTEGER;
                 throw new ArgsException();
             }
@@ -279,6 +284,7 @@ public class Args {
                 errorCode = ErrorCode.MISSING_DOUBLE;
                 throw new ArgsException();
             } catch (NumberFormatException e) {
+                errorParameter = parameter;
                 errorCode = ErrorCode.INVALID_DOUBLE;
                 throw new ArgsException();
             }

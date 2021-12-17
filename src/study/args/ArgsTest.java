@@ -21,14 +21,14 @@ class ArgsTest {
     void testWithNoSchemaButWithOneArgument() throws Exception {
         Args args = new Args("", new String[]{"-x"});
 
-        fail(args);
+        fail(args, "Argument(s) -x unexpected.");
     }
 
     @Test
     void testWithNoSchemaButWithMultipleArguments() throws Exception {
         Args args = new Args("", new String[]{"-x", "-y"});
 
-        fail(args);
+        fail(args, "Argument(s) -xy unexpected.");
     }
 
     @Test
@@ -82,7 +82,7 @@ class ArgsTest {
     void testMissingStringArgument() throws Exception {
         Args args = new Args("x*", new String[]{"-x"});
 
-        fail(args);
+        fail(args, "Could not find string parameter for -x.");
     }
 
     @Test
@@ -103,14 +103,14 @@ class ArgsTest {
     void testInvalidInteger() throws Exception {
         Args args = new Args("x#", new String[]{"-x", "Forty one"});
 
-        fail(args);
+        fail(args, "Argument -x expects an integer but was 'TILT'.");
     }
 
     @Test
     void testMissingInteger() throws Exception {
         Args args = new Args("x#", new String[]{"-x"});
 
-        fail(args);
+        fail(args, "Could not find integer parameter for -x.");
     }
 
     @Test
@@ -125,14 +125,14 @@ class ArgsTest {
     void testInvalidDouble() throws Exception {
         Args args = new Args("x##", new String[]{"-x", "53,4"});
 
-        fail(args);
+        fail(args, "Argument -x expects an double but was '53,4'.");
     }
 
     @Test
     void testMissingDouble() throws Exception {
         Args args = new Args("x##", new String[]{"-x"});
 
-        fail(args);
+        fail(args, "Could not find double parameter for -x.");
     }
 
     @Test
@@ -144,9 +144,13 @@ class ArgsTest {
         assertThat(args.getString('s')).isEqualTo("test");
     }
 
-    private void fail(Args args) {
+    private void fail(Args args, String message) {
         assertThat(args.isValid()).isFalse();
         assertThat(args.cardinality()).isEqualTo(0);
+        try {
+            assertThat(args.errorMessage()).isEqualTo(message);
+        } catch (Exception e) {
+        }
     }
 
 }
