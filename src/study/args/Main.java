@@ -1,6 +1,6 @@
 package study.args;
 
-import java.text.ParseException;
+import study.args.exception.ArgsException;
 
 public class Main {
 
@@ -11,7 +11,7 @@ public class Main {
             int i = arguments.getInt('i');
             String s = arguments.getString('s');
             System.out.printf("%b %d %s%n", b, i, s);
-        } catch (ParseException e) {
+        } catch (ArgsException e) {
             System.out.println("e.getMessage() = " + e.getMessage());
         }
     }
